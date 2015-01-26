@@ -10,12 +10,13 @@ SceneryCrate crate_for_player = null;        int wait_player;
 SceneryCrate crate_for_inspector = null;     int wait_inspector;
 SceneryCrate crate_for_smuggler = null;      int wait_smuggler;
 boolean crates_should_move = true;
+int score = 0;
 
 //Inspector Memory
 MiniTag[] inspector_minitag;
 MiniTag[] smuggler_minitag;
 ArrayList<Code> inspector_code_memory;
-Code[] smuggler_code_memory;
+ArrayList<Code> smuggler_code_memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -38,6 +39,8 @@ int nextFrame = 100; int animRate = 100; int lastMillis = 0;
 int nextBlinkTime = 2000 + int(random(3000));
 
 void setup(){
+    randomSeed(0);
+  
     size(300*3, 350);
     background(153);
     img_crate = loadImage("crate.png");
@@ -81,7 +84,7 @@ void setup(){
     //Set up the minitag index with empties
     inspector_minitag = new MiniTag[4];
     smuggler_minitag = new MiniTag[4];
-    smuggler_code_memory = new Code[4];
+    smuggler_code_memory = new ArrayList<Code>();
     inspector_code_memory = new ArrayList<Code>();
     
     int[][] empty = new int[][]{
@@ -107,6 +110,7 @@ void setup(){
       {1,0,1,0},
       {0,1,0,1},
     };
+    
     
 }
 
@@ -161,10 +165,15 @@ void addCodeToSmugglerMemory(SceneryCrate sc){
     smuggler_minitag[smugglerMemorySize-1].x = smuggler_minitag[smugglerMemorySize-2].x;  
     
     Code encoding = sc.getEncoding();
-    for(int i=0; i<smugglerMemorySize-1; i++){
-       smuggler_code_memory[i] = smuggler_code_memory[i+1];
+//    for(int i=0; i<smugglerMemorySize-1; i++){
+//       smuggler_code_memory[i] = smuggler_code_memory[i+1];
+//    }
+
+    smuggler_code_memory.add(encoding);
+    if (smuggler_code_memory.size() > 4) {
+      smuggler_code_memory.remove(0);
     }
-    smuggler_code_memory[smugglerMemorySize-1] = encoding;
+//    smuggler_code_memory[smugglerMemorySize-1] = encoding;
     
 }
 
@@ -231,38 +240,82 @@ void draw(){
       sc.setWaypoint(wait_player);
       crate_for_player = sc;
    }
+   
+   Code dummyCode = new Code(new Integer[0]);
+   Code inspector_model = dummyCode.learnCode(inspector_code_memory); // generalize
+   Code smuggler_model = dummyCode.learnCode(smuggler_code_memory); // generalize
+   
+   // INSPECTOR CHECKING
    if(crate_for_inspector != null && 
        crate_for_inspector.x == crate_for_inspector.waypoint && crates_should_move){
        //The inspector crate is waiting
        crates_should_move = false;
-       //inspectorMakeDecision()
        
-       //if(crate_is_ignored()){
-       if(int(random(2)) == 0){
-         crates_should_move = true;
+       boolean doInspect = false;
+       
+       if (inspector_model != null &&
+           inspector_model.matchCode(crate_for_inspector.getEncoding())) {
+             
+           print("inspector matched!");
+           println(inspector_model.code);
+           doInspect = true;
+           
+       } else if (int(random(2)) == 0) {
+         println("inspector randomly checks");
+         doInspect = true;
+       }
+       
+       if (doInspect) {
+          println("doing inspection...adding to memory");
          addCodeToInspectorMemory(crate_for_inspector);
+         
+         crate_for_inspector.setYWaypoint(height+32);
+         crate_for_inspector = null;
+         crates_should_move = true;
+         
+         Code generalModel = dummyCode.learnCode(inspector_code_memory);
+         if (generalModel.totalCode()) {
+            println("inspector suspects everything...game over!"); 
+         }
+       }
+       else{
+         crates_should_move = true;
          crate_for_inspector.setWaypoint(wait_smuggler);
          crate_for_smuggler = crate_for_inspector;
          crate_for_inspector = null;
        }
-       else{
-         crate_for_inspector.setYWaypoint(height+32);
-         crate_for_inspector = null;
-         crates_should_move = true;
-       }
    }
    
+   // SMUGGLER CHECKING
    if(crate_for_smuggler != null &&
      crate_for_smuggler.x == crate_for_smuggler.waypoint && crates_should_move){
      crates_should_move = false;
-     //smugglerMakeDecision()
+     
+     println("smuggler memory size: " + smuggler_code_memory.size());
+     if (smuggler_model != null) {
+       String outStr = "";
+        for (int i=0; i<smuggler_model.code.length; i++) {
+          outStr += smuggler_model.code[i] + ",";
+        }
+       println("smuggler model: " + outStr);
+     }
+     if (smuggler_model != null && 
+         smuggler_model.matchCode(crate_for_smuggler.getEncoding())) {
+             println("smuggler matched crate and scores!");
+             score += 1;
+     } else {
+       println("smuggler fails!");
+     }
+     
+     println("smuggler learns!");
      addCodeToSmugglerMemory(crate_for_smuggler);
      //Again, for now let's unpause immediately and process it
      crates_should_move = true; 
      crate_for_smuggler.setWaypoint(width+64);
-     crate_for_smuggler = null;   
+     crate_for_smuggler = null;
+     
+     println("current score: " + score);
    }
-   
    //Animation [IGNORE]
    nextBlinkTime -= (millis() - lastMillis);
    if(nextBlinkTime < 0){
@@ -517,6 +570,9 @@ class Code {
   }
 
   Code learnCode(ArrayList<Code> inputCodes) {
+    if (inputCodes.size() < 1) {
+      return null;
+    }
     //  Integer[] learnCode(List[Integer] inputCodes[][]) {
     int totalCodes = inputCodes.size();
     int codeLength = inputCodes.get(0).len;
@@ -544,7 +600,7 @@ class Code {
           code = inputCodes.get(currentCode).code[c];
           learnedCode[c] = code;
         } else {
-          if (code != inputCodes.get(currentCode).code[c]) {
+          if (code.equals(inputCodes.get(currentCode).code[c])) {
             learnedCode[c] = null;
           }
         }
@@ -553,6 +609,16 @@ class Code {
     Code lcode = new Code(learnedCode);
     return lcode;
   }
+  
+  public boolean totalCode() {
+   for (int i=0; i<this.len; i++) {
+    if (code[i] != null) {
+     return false;
+    }
+   } 
+   return true;
+  }
+  
 }
 
 void blink(){
