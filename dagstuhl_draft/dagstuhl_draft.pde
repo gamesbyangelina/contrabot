@@ -12,10 +12,8 @@ SceneryCrate crate_for_smuggler = null;      int wait_smuggler;
 boolean crates_should_move = true;
 
 //Inspector Memory
-MiniTag[] inspector_minitag;
-MiniTag[] smuggler_minitag;
-ArrayList<Code> inspector_code_memory;
-Code[] smuggler_code_memory;
+MiniTag[] inspector_memory;
+MiniTag[] smuggler_memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -24,11 +22,12 @@ PFont font;
 PImage img_crate;
 PImage img_smuggler;
 PImage img_inspector;
+PImage bubble_question, bubble_tick, bubble_exclamation;
 
 //Game state stuff
 boolean b_waitingForPlayerToSendCode = true;
-int inspectorMemorySize = 4;
-int smugglerMemorySize = 4;
+int inspectorMemorySize = 4; int inspector_mental_state = -1;
+int smugglerMemorySize = 4; 
 int minitagwidth = 4;
 
 //Scenery silliness
@@ -40,11 +39,14 @@ int nextFrame = 100; int animRate = 100; int lastMillis = 0;
 int nextBlinkTime = 2000 + int(random(3000));
 
 void setup(){
-    size(300*3, 350);
+    size(300*3, 450);
     background(153);
     img_crate = loadImage("crate.png");
     img_inspector = loadImage("inspector.png");
     img_smuggler = loadImage("smuggler.png");
+    bubble_question = loadImage("bubble_question.png");
+    bubble_tick = loadImage("bubble_tick.png");
+    bubble_exclamation = loadImage("bubble_exclamation.png");
     
     anim_inspector = new PImage[7];
     for(int i=1; i<8; i++){
@@ -83,11 +85,8 @@ void setup(){
     wait_smuggler = 650+(tableSize*50)/2 - 12;
 
     //Set up the minitag index with empties
-    inspector_minitag = new MiniTag[4];
-    smuggler_minitag = new MiniTag[4];
-    smuggler_code_memory = new Code[4];
-    inspector_code_memory = new ArrayList<Code>();
-    
+    inspector_memory = new MiniTag[4];
+    smuggler_memory = new MiniTag[4];
     int[][] empty = new int[][]{
         {2,2,2,2},
         {2,2,2,2},
@@ -95,10 +94,10 @@ void setup(){
         {2,2,2,2},
     };
     for(int i=0; i<inspectorMemorySize; i++){
-      inspector_minitag[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+      inspector_memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
     }
     for(int i=0; i<inspectorMemorySize; i++){
-      smuggler_minitag[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
+      smuggler_memory[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
     }
 
     font = createFont("font.ttf", 32);
@@ -133,7 +132,6 @@ void sendCode(){
 
    //b_waitingForPlayerToSendCode = false; 
    
-   crate_for_player.attachEncoding(encoded);
    crate_for_player.attachTag(code);
    crate_for_player.setWaypoint(wait_inspector);
    crate_for_inspector = crate_for_player;
@@ -142,34 +140,26 @@ void sendCode(){
 
 void addCodeToInspectorMemory(SceneryCrate sc){
      MiniTag m = sc.m.copy();
-    inspector_minitag[0].tween_target_y = -32;
+    inspector_memory[0].tween_target_y = -32;
     for(int i=0; i<inspectorMemorySize-1; i++){
-       inspector_minitag[i+1].tween_target_y = inspector_minitag[i].y;
-       inspector_minitag[i] = inspector_minitag[i+1];
+       inspector_memory[i+1].tween_target_y = inspector_memory[i].y;
+       inspector_memory[i] = inspector_memory[i+1];
     }
-    inspector_minitag[inspectorMemorySize-1] = m;
-    inspector_minitag[inspectorMemorySize-1].tween_target_y = inspector_minitag[inspectorMemorySize-2].y;
-    inspector_minitag[inspectorMemorySize-1].x = inspector_minitag[inspectorMemorySize-2].x;  
-    inspector_code_memory.add(sc.getEncoding());
+    inspector_memory[inspectorMemorySize-1] = m;
+    inspector_memory[inspectorMemorySize-1].tween_target_y = inspector_memory[inspectorMemorySize-2].y;
+    inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-2].x;  
 }
 
 void addCodeToSmugglerMemory(SceneryCrate sc){
      MiniTag m = sc.m.copy();
-    smuggler_minitag[0].tween_target_y = -32;
+    smuggler_memory[0].tween_target_y = -32;
     for(int i=0; i<smugglerMemorySize-1; i++){
-       smuggler_minitag[i+1].tween_target_y = inspector_minitag[i].y;
-       smuggler_minitag[i] = smuggler_minitag[i+1];
+       smuggler_memory[i+1].tween_target_y = inspector_memory[i].y;
+       smuggler_memory[i] = smuggler_memory[i+1];
     }
-    smuggler_minitag[smugglerMemorySize-1] = m;
-    smuggler_minitag[smugglerMemorySize-1].tween_target_y = smuggler_minitag[smugglerMemorySize-2].y;
-    smuggler_minitag[smugglerMemorySize-1].x = smuggler_minitag[smugglerMemorySize-2].x;  
-    
-    Code encoding = sc.getEncoding();
-    for(int i=0; i<smugglerMemorySize-1; i++){
-       smuggler_code_memory[i] = smuggler_code_memory[i+1];
-    }
-    smuggler_code_memory[smugglerMemorySize-1] = encoding;
-    
+    smuggler_memory[smugglerMemorySize-1] = m;
+    smuggler_memory[smugglerMemorySize-1].tween_target_y = smuggler_memory[smugglerMemorySize-2].y;
+    smuggler_memory[smugglerMemorySize-1].x = smuggler_memory[smugglerMemorySize-2].x;  
 }
 
 
@@ -207,20 +197,33 @@ void draw(){
     }
     
     //Draw the inspector
-    image(anim_inspector[inspector_frame], 900/2 - 32, 350-64);
-    image(img_inspector, 900/2-32-32, 350-72);
+    image(anim_inspector[inspector_frame], 900/2 - 32, height-64);
+    image(img_inspector, 900/2-32-32, height-72);
+    if(inspector_mental_state > -1){
+       switch(inspector_mental_state){
+          case 0:
+            image(bubble_question, 900/2-28, height-72-40);
+            break;
+          case 1:
+            image(bubble_tick, 900/2-28, height-72-40);
+            break;
+          case 2:
+            image(bubble_exclamation, 900/2-28, height-72-40);
+            break;
+       } 
+    }
     //Draw the smuggler
-    image(img_smuggler, 600+150-32, 350-72);
+    image(img_smuggler, 600+150-32, height-72);
     //The crates
     for(SceneryCrate sc : scenery_crates){
         sc.update(); 
     }
     //Minitags in the inspector memory
     for(int i=0; i<inspectorMemorySize; i++){
-       inspector_minitag[i].draw(); 
+       inspector_memory[i].draw(); 
     }
     for(int i=0; i<smugglerMemorySize; i++){
-       smuggler_minitag[i].draw(); 
+       smuggler_memory[i].draw(); 
     }
     //Some text
     fill(0,0,0);
@@ -228,12 +231,12 @@ void draw(){
     text("Suspected Code", 350 + tableSize*(buttonWidth/2), 15);
     text("Smuggler's Code", 650 + tableSize*(buttonWidth/2), 15);
     text("Press SPACE to transmit", 450, 265);
-    rect(0, 348, width, 2);
+    rect(0, height-2, width, 2);
     
    //Update all the game logics!
    if(crate_for_player == null){
       //Player has no crate, so send one along.
-      SceneryCrate sc = new SceneryCrate(-10, 318);
+      SceneryCrate sc = new SceneryCrate(-10, height - 32);
       scenery_crates.add(sc);
       sc.setWaypoint(wait_player);
       crate_for_player = sc;
@@ -246,6 +249,7 @@ void draw(){
        
        //if(crate_is_ignored()){
        if(int(random(2)) == 0){
+         inspector_mental_state = 1;
          crates_should_move = true;
          addCodeToInspectorMemory(crate_for_inspector);
          crate_for_inspector.setWaypoint(wait_smuggler);
@@ -253,7 +257,8 @@ void draw(){
          crate_for_inspector = null;
        }
        else{
-         crate_for_inspector.setYWaypoint(height+32);
+         inspector_mental_state = 2;
+         crate_for_inspector.setYWaypoint(height+64);
          crate_for_inspector = null;
          crates_should_move = true;
        }
@@ -319,7 +324,6 @@ class SceneryCrate{
    int waypoint = -1;
    int y_waypoint = -1;
    MiniTag m = null;
-   Code encoding = null;
   
   SceneryCrate(int _x, int _y){
      x = _x; y = _y;
@@ -342,15 +346,6 @@ class SceneryCrate{
      } 
      m = new MiniTag(code_as_ints, x, y, minitagwidth);
   }
-  
-  void attachEncoding(Code encoding){
-    this.encoding = encoding;
-  }
-  
-  public Code getEncoding(){
-    return encoding;
-  } 
-  
   
   void update(){
     if(crates_should_move){
