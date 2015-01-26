@@ -2,6 +2,13 @@
 CodeButton[][] code;
 //Current Inspector Model Panel
 CodeButton[][] suspected_code;
+
+//Conveyor Belt
+SceneryCrate crate_for_player = null;        int wait_player;
+SceneryCrate crate_for_inspector = null;     int wait_inspector;
+SceneryCrate crate_for_smuggler = null;      int wait_smuggler;
+boolean crates_should_move = true;
+
 //Inspector Memory
 MiniTag[] memory;
 int tableSize = 4;
@@ -41,6 +48,9 @@ void setup(){
           code[i][j] = new CodeButton(50+i*50, 50+j*50, 50, 50, true);
        } 
     }
+    
+    wait_player = 50+(tableSize*50)/2 - 12;
+    
     //Create a 3x3 table of (uneditable) buttons to show what the current suspected code is
     suspected_code = new CodeButton[tableSize][tableSize];
     for(int i=0; i<tableSize; i++){
@@ -48,6 +58,8 @@ void setup(){
           suspected_code[i][j] = new CodeButton(350+(i*50), 50+j*50, 50, 50, false);
        } 
     }
+    
+    wait_inspector = 350+(tableSize*50)/2 - 12;
 
     //Set up the minitag index with empties
     memory = new MiniTag[4];
@@ -80,13 +92,14 @@ void sendCode(){
     */
    //b_waitingForPlayerToSendCode = false; 
    
-   SceneryCrate sc = new SceneryCrate(-10, 318);
-   scenery_crates.add(sc);
-   sc.attachTag(code);
+   crate_for_player.attachTag(code);
+   crate_for_player.setWaypoint(wait_inspector);
+   crate_for_inspector = crate_for_player;
+   crate_for_player = null;
 }
 
 void keyPressed(){
-   if(key == ' ' && b_waitingForPlayerToSendCode){
+   if(crates_should_move && key == ' ' && b_waitingForPlayerToSendCode){
       sendCode();
    } 
    if(key == 'q'){
@@ -117,15 +130,16 @@ void draw(){
     }
     
     //Draw the inspector
-    image(anim_inspector[inspector_frame], 900/2 - 24, 350-64);
-    
+    image(anim_inspector[inspector_frame], 900/2 - 32, 350-64);
+    //The crates
     for(SceneryCrate sc : scenery_crates){
         sc.update(); 
     }
+    //Minitags in the inspector memory
     for(int i=0; i<inspectorMemorySize; i++){
        memory[i].draw(); 
     }
-    
+    //Some text
     fill(0,0,0);
     text("Current Code", 50 + tableSize*(buttonWidth/2), 15);
     text("Suspected Code", 350 + tableSize*(buttonWidth/2), 15);
@@ -133,6 +147,24 @@ void draw(){
     rect(0, 348, width, 2);
     
    //Update all the game logics!
+   if(crate_for_player == null){
+      //Player has no crate, so send one along.
+      SceneryCrate sc = new SceneryCrate(-10, 318);
+      scenery_crates.add(sc);
+      sc.setWaypoint(wait_player);
+      crate_for_player = sc;
+   }
+   if(crate_for_inspector != null && 
+       crate_for_inspector.x == crate_for_inspector.waypoint && crates_should_move){
+       //The inspector crate is waiting
+       crates_should_move = false;
+       //inspectorMakeDecision()
+       //DEBUG: We don't have an inspector yet so we can just shuffle the crates off the screen
+       crates_should_move = true;
+       crate_for_inspector.waypoint = width+64;
+   }
+   
+   //Animation [IGNORE]
    if(inspector_frame_dx != 0){
      nextFrame -= (millis() - lastMillis);
      if(nextFrame < 0){
@@ -152,6 +184,7 @@ void draw(){
      }
      lastMillis = millis();
    }
+   //END ANIMATION
    
 }
 
@@ -171,11 +204,16 @@ void mousePressed(){
 class SceneryCrate{
    int x, y;
    int speed = 2;
+   int waypoint = 0;
    MiniTag m = null;
   
   SceneryCrate(int _x, int _y){
      x = _x; y = _y;
   } 
+  
+  void setWaypoint(int x){
+     waypoint = x; 
+  }
   
   void attachTag(CodeButton[][] code){
     int[][] code_as_ints = new int[code.length][code[0].length]; 
@@ -188,10 +226,14 @@ class SceneryCrate{
   }
   
   void update(){
-     if(x > width){
-//        x = -32; 
-     }
-     x += speed;
+    if(crates_should_move){
+       if(x >= waypoint){
+          x = waypoint;
+       }
+       else{
+         x += speed;
+       }
+    }
      
      image(img_crate, x, y);
      //draw the tag
