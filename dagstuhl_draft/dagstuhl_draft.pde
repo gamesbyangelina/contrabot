@@ -23,6 +23,8 @@ int buttonWidth = 50;
 //Assets - images, fonts, etc.
 PFont font;
 PImage img_crate;
+PImage img_smuggler;
+PImage img_inspector;
 
 //Game state stuff
 boolean b_waitingForPlayerToSendCode = true;
@@ -44,6 +46,8 @@ void setup(){
     size(300*3, 350);
     background(153);
     img_crate = loadImage("crate.png");
+    img_inspector = loadImage("inspector.png");
+    img_smuggler = loadImage("smuggler.png");
     
     anim_inspector = new PImage[7];
     for(int i=1; i<8; i++){
@@ -190,7 +194,7 @@ void keyPressed(){
 
 
 void draw(){
-   background(153);
+   background(100);
    stroke(0);
    fill(0);
    
@@ -213,6 +217,9 @@ void draw(){
     
     //Draw the inspector
     image(anim_inspector[inspector_frame], 900/2 - 32, 350-64);
+    image(img_inspector, 900/2-32-32, 350-72);
+    //Draw the smuggler
+    image(img_smuggler, 600+150-32, 350-72);
     //The crates
     for(SceneryCrate sc : scenery_crates){
         sc.update(); 
