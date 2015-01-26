@@ -33,6 +33,7 @@ int inspector_frame = 0;
 int inspector_frame_dx = 0;
 PImage[] anim_inspector;
 int nextFrame = 100; int animRate = 100; int lastMillis = 0;
+int nextBlinkTime = 2000 + int(random(3000));
 
 void setup(){
     size(300*3, 350);
@@ -159,15 +160,11 @@ void keyPressed(){
       sendCode();
    } 
    if(key == 'q'){
-      //Test the animation
-      if(inspector_frame == 0){
-         inspector_frame_dx = 1; 
-      }
-      else if(inspector_frame == 6){
-        inspector_frame_dx = -1;
-      }
+      blink();
    }
 }
+
+
 
 void draw(){
    background(153);
@@ -253,6 +250,11 @@ void draw(){
    }
    
    //Animation [IGNORE]
+   nextBlinkTime -= (millis() - lastMillis);
+   if(nextBlinkTime < 0){
+     blink();
+     nextBlinkTime = 3000 + int(random(5000)); 
+   }
    if(inspector_frame_dx != 0){
      nextFrame -= (millis() - lastMillis);
      if(nextFrame < 0){
@@ -270,8 +272,9 @@ void draw(){
               inspector_frame_dx = 0;
        }
      }
-     lastMillis = millis();
    }
+   lastMillis = millis();
+   
    //END ANIMATION
    
 }
@@ -415,8 +418,9 @@ class CodeButton{
     
     int state = 0;
     color c;
-    color c_on = color(0, 0, 0);
-    color c_off = color(255, 255, 255);
+    color c_on = color(0);
+    color c_unknown = color(128);
+    color c_off = color(255);
     
     boolean editable = true;
     
@@ -442,6 +446,7 @@ class CodeButton{
        switch(state){
           case 0: c = c_off; break;
           case 1: c = c_on; break;
+          case 2: c = c_unknown; break;
        } 
     }
     
@@ -524,5 +529,14 @@ class Code {
     Code lcode = new Code(learnedCode);
     return lcode;
   }
+}
+
+void blink(){
+      if(inspector_frame == 0){
+         inspector_frame_dx = 1; 
+      }
+      else if(inspector_frame == 6){
+        inspector_frame_dx = -1;
+      } 
 }
 
