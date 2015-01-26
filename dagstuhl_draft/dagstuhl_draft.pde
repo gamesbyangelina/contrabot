@@ -110,7 +110,8 @@ void sendCode(){
    crate_for_player = null;
 }
 
-void addCodeToInspectorMemory(MiniTag m){
+void addCodeToInspectorMemory(SceneryCrate sc){
+     MiniTag m = sc.m;
     inspector_memory[0].tween_target_y = -32;
     for(int i=0; i<inspectorMemorySize-1; i++){
        inspector_memory[i+1].tween_target_y = inspector_memory[i].y;
@@ -118,8 +119,8 @@ void addCodeToInspectorMemory(MiniTag m){
     }
     inspector_memory[inspectorMemorySize-1] = m;
     inspector_memory[inspectorMemorySize-1].tween_target_y = inspector_memory[inspectorMemorySize-2].y;
-    inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-1].x;
-    
+    sc.m.x = inspector_memory[inspectorMemorySize-2].x;
+    sc.m = null;   
 }
 
 void keyPressed(){
@@ -191,7 +192,7 @@ void draw(){
        //DEBUG: We don't have an inspector yet so we can just shuffle the crates off the screen
        crates_should_move = true;
        crate_for_inspector.waypoint = width+64;
-       addCodeToInspectorMemory(crate_for_inspector.m);
+       addCodeToInspectorMemory(crate_for_inspector);
    }
    
    //Animation [IGNORE]
@@ -314,13 +315,19 @@ class MiniTag{
         } 
      }
      
+//     //DEBUG BECAUSE FUCK TWEENING AT 10.30PM
+//     if(tween_target_y != y){
+//        y = tween_target_y;
+//       return; 
+//     }
+     
      if(tween_target_y < y){
         y -= speed; 
      }
      else if(tween_target_y > y){
         y += speed; 
      }
-     if(tween_target_y != y && abs(tween_target_y-y) < speed){
+     if(tween_target_y != y && Math.abs(tween_target_y-y) < speed){
         y = tween_target_y; 
      }
    }
