@@ -2,6 +2,8 @@
 CodeButton[][] code;
 //Current Inspector Model Panel
 CodeButton[][] suspected_code;
+//Current Smuggler Model Panel
+CodeButton[][] smuggler_code;
 
 //Conveyor Belt
 SceneryCrate crate_for_player = null;        int wait_player;
@@ -10,7 +12,7 @@ SceneryCrate crate_for_smuggler = null;      int wait_smuggler;
 boolean crates_should_move = true;
 
 //Inspector Memory
-MiniTag[] memory;
+MiniTag[] inspector_memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -60,9 +62,19 @@ void setup(){
     }
     
     wait_inspector = 350+(tableSize*50)/2 - 12;
+    
+    //Create a 3x3 table of (uneditable) buttons to show what the current suspected code is
+    smuggler_code = new CodeButton[tableSize][tableSize];
+    for(int i=0; i<tableSize; i++){
+       for(int j=0; j<tableSize; j++){
+          smuggler_code[i][j] = new CodeButton(650+(i*50), 50+j*50, 50, 50, false);
+       } 
+    }
+    
+    wait_smuggler = 650+(tableSize*50)/2 - 12;
 
     //Set up the minitag index with empties
-    memory = new MiniTag[4];
+    inspector_memory = new MiniTag[4];
     int[][] empty = new int[][]{
         {2,2,2,2},
         {2,2,2,2},
@@ -70,7 +82,7 @@ void setup(){
         {2,2,2,2},
     };
     for(int i=0; i<inspectorMemorySize; i++){
-      memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+      inspector_memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
     }
 
     font = createFont("font.ttf", 32);
@@ -96,6 +108,18 @@ void sendCode(){
    crate_for_player.setWaypoint(wait_inspector);
    crate_for_inspector = crate_for_player;
    crate_for_player = null;
+}
+
+void addCodeToInspectorMemory(MiniTag m){
+    inspector_memory[0].tween_target_y = -32;
+    for(int i=0; i<inspectorMemorySize-1; i++){
+       inspector_memory[i+1].tween_target_y = inspector_memory[i].y;
+       inspector_memory[i] = inspector_memory[i+1];
+    }
+    inspector_memory[inspectorMemorySize-1] = m;
+    inspector_memory[inspectorMemorySize-1].tween_target_y = inspector_memory[inspectorMemorySize-2].y;
+    inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-1].x;
+    
 }
 
 void keyPressed(){
@@ -126,6 +150,10 @@ void draw(){
          cb = suspected_code[i][j];
          fill(cb.c);
          rect(cb.x, cb.y, cb.w, cb.h);
+         
+         cb = smuggler_code[i][j];
+         fill(cb.c);
+         rect(cb.x, cb.y, cb.w, cb.h);
       } 
     }
     
@@ -137,13 +165,14 @@ void draw(){
     }
     //Minitags in the inspector memory
     for(int i=0; i<inspectorMemorySize; i++){
-       memory[i].draw(); 
+       inspector_memory[i].draw(); 
     }
     //Some text
     fill(0,0,0);
     text("Current Code", 50 + tableSize*(buttonWidth/2), 15);
     text("Suspected Code", 350 + tableSize*(buttonWidth/2), 15);
-    text("Press SPACE to transmit", 300, 265);
+    text("Smuggler's Code", 650 + tableSize*(buttonWidth/2), 15);
+    text("Press SPACE to transmit", 450, 265);
     rect(0, 348, width, 2);
     
    //Update all the game logics!
@@ -162,6 +191,7 @@ void draw(){
        //DEBUG: We don't have an inspector yet so we can just shuffle the crates off the screen
        crates_should_move = true;
        crate_for_inspector.waypoint = width+64;
+       addCodeToInspectorMemory(crate_for_inspector.m);
    }
    
    //Animation [IGNORE]
@@ -251,14 +281,15 @@ class SceneryCrate{
 class MiniTag{
     int[][] array;
     int x;
-    int y;
+    int y; int tween_target_y;
     int w;
+    int speed = 5;
     
     int border = 1;
   
    MiniTag(int[][] _array, int _x, int _y, int _w){
      array = _array;
-     x = _x; y = _y;
+     x = _x; y = _y; tween_target_y = _y;
      w = _w;
    }
    
@@ -281,6 +312,16 @@ class MiniTag{
           }
           rect(border + x + i*w, border + y + j*w, w, w);
         } 
+     }
+     
+     if(tween_target_y < y){
+        y -= speed; 
+     }
+     else if(tween_target_y > y){
+        y += speed; 
+     }
+     if(tween_target_y != y && abs(tween_target_y-y) < speed){
+        y = tween_target_y; 
      }
    }
 }
