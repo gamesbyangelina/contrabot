@@ -3,10 +3,11 @@ CodeButton[][] suspected_code;
 int tableSize = 4;
 int buttonWidth = 50;
 
+//Assets - images, fonts, etc.
 PFont font;
 PImage img_crate;
 
-//Mini tag maintenance
+//Test stuff for building miniature tags
 MiniTag m;
 
 //Game state stuff
@@ -171,11 +172,17 @@ class SceneryCrate{
   }
 }
 
+/*
+ *  Minitags are used to indicate codes that have been sent through the conveyor.
+ *  They're little UI things, basically.
+ */
 class MiniTag{
     int[][] array;
     int x;
     int y;
     int w;
+    
+    int border = 1;
   
    MiniTag(int[][] _array, int _x, int _y, int _w){
      array = _array;
@@ -184,6 +191,8 @@ class MiniTag{
    }
    
    void draw(){
+     fill(0); stroke(0);
+     rect(x, y, w*array.length+border+border, w*array[0].length+border+border);
      for(int i=0; i<array.length; i++){
         for(int j=0; j<array[i].length; j++){
           if(array[i][j] == 0){
@@ -194,7 +203,7 @@ class MiniTag{
             stroke(0);
             fill(0);
           }
-          rect(x + i*w, y + j*w, w, w);
+          rect(border + x + i*w, border + y + j*w, w, w);
         } 
      }
    }
