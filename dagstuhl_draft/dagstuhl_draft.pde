@@ -1,5 +1,9 @@
+//Player Input Panel
 CodeButton[][] code;
+//Current Inspector Model Panel
 CodeButton[][] suspected_code;
+//Inspector Memory
+MiniTag[] memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -7,11 +11,10 @@ int buttonWidth = 50;
 PFont font;
 PImage img_crate;
 
-//Test stuff for building miniature tags
-MiniTag m;
-
 //Game state stuff
 boolean b_waitingForPlayerToSendCode = true;
+int inspectorMemorySize = 4;
+int minitagwidth = 4;
 
 //Scenery silliness
 ArrayList<SceneryCrate> scenery_crates = new ArrayList<SceneryCrate>();
@@ -30,6 +33,7 @@ void setup(){
         anim_inspector[i-1] = loadImage("inspector"+i+".png");
     }
   
+    stroke(0);
     //Create a 3x3 table of buttons to encode a message in
     code = new CodeButton[tableSize][tableSize];
     for(int i=0; i<tableSize; i++){
@@ -45,15 +49,21 @@ void setup(){
        } 
     }
 
+    //Set up the minitag index with empties
+    memory = new MiniTag[4];
+    int[][] empty = new int[][]{
+        {2,2,2,2},
+        {2,2,2,2},
+        {2,2,2,2},
+        {2,2,2,2},
+    };
+    for(int i=0; i<inspectorMemorySize; i++){
+      memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+    }
+
     font = createFont("font.ttf", 32);
     textFont(font);
     textAlign(CENTER, TOP);
-    
-    int cx = -32;
-    while(cx < 868){
-      cx += 50 + random(50);
-      scenery_crates.add(new SceneryCrate(cx, 318));
-    }
     
     int[][] minicode = new int[][]{
       {1,0,1,0},
@@ -61,7 +71,6 @@ void setup(){
       {1,0,1,0},
       {0,1,0,1},
     };
-    m = new MiniTag(minicode, 10, 10, 4); 
     
 }
 
@@ -71,7 +80,9 @@ void sendCode(){
     */
    //b_waitingForPlayerToSendCode = false; 
    
-   scenery_crates.add(new SceneryCrate(-10, 318));
+   SceneryCrate sc = new SceneryCrate(-10, 318);
+   scenery_crates.add(sc);
+   sc.attachTag(code);
 }
 
 void keyPressed(){
@@ -109,8 +120,10 @@ void draw(){
     image(anim_inspector[inspector_frame], 900/2 - 24, 350-64);
     
     for(SceneryCrate sc : scenery_crates){
-       image(img_crate, sc.x, sc.y);
         sc.update(); 
+    }
+    for(int i=0; i<inspectorMemorySize; i++){
+       memory[i].draw(); 
     }
     
     fill(0,0,0);
@@ -140,7 +153,6 @@ void draw(){
      lastMillis = millis();
    }
    
-   m.draw();
 }
 
 void mousePressed(){
@@ -159,16 +171,34 @@ void mousePressed(){
 class SceneryCrate{
    int x, y;
    int speed = 2;
+   MiniTag m = null;
   
   SceneryCrate(int _x, int _y){
      x = _x; y = _y;
   } 
   
+  void attachTag(CodeButton[][] code){
+    int[][] code_as_ints = new int[code.length][code[0].length]; 
+     for(int i=0; i<code.length; i++){
+        for(int j=0; j<code[0].length; j++){
+            code_as_ints[i][j] = code[i][j].state;
+        }
+     } 
+     m = new MiniTag(code_as_ints, x, y, minitagwidth);
+  }
+  
   void update(){
      if(x > width){
-        x = -32; 
+//        x = -32; 
      }
      x += speed;
+     
+     image(img_crate, x, y);
+     //draw the tag
+     if(m != null){
+       m.x = x; m.y = y;
+        m.draw(); 
+     }
   }
 }
 
@@ -199,9 +229,13 @@ class MiniTag{
             fill(255);
             stroke(255);
           }
-          else{
+          else if(array[i][j] == 1){
             stroke(0);
             fill(0);
+          }
+          else if(array[i][j] == 2){
+              stroke(128);
+              fill(128); 
           }
           rect(border + x + i*w, border + y + j*w, w, w);
         } 
