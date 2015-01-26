@@ -111,7 +111,7 @@ void sendCode(){
 }
 
 void addCodeToInspectorMemory(SceneryCrate sc){
-     MiniTag m = sc.m;
+     MiniTag m = sc.m.copy();
     inspector_memory[0].tween_target_y = -32;
     for(int i=0; i<inspectorMemorySize-1; i++){
        inspector_memory[i+1].tween_target_y = inspector_memory[i].y;
@@ -119,8 +119,7 @@ void addCodeToInspectorMemory(SceneryCrate sc){
     }
     inspector_memory[inspectorMemorySize-1] = m;
     inspector_memory[inspectorMemorySize-1].tween_target_y = inspector_memory[inspectorMemorySize-2].y;
-    sc.m.x = inspector_memory[inspectorMemorySize-2].x;
-    sc.m = null;   
+    inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-2].x;  
 }
 
 void keyPressed(){
@@ -189,10 +188,13 @@ void draw(){
        //The inspector crate is waiting
        crates_should_move = false;
        //inspectorMakeDecision()
-       //DEBUG: We don't have an inspector yet so we can just shuffle the crates off the screen
-       crates_should_move = true;
-       crate_for_inspector.waypoint = width+64;
        addCodeToInspectorMemory(crate_for_inspector);
+       
+       //if(crate_is_ignored()){
+       crates_should_move = true;
+       crate_for_inspector.setWaypoint(width+32);
+       crate_for_inspector = null;
+       //}
    }
    
    //Animation [IGNORE]
@@ -292,6 +294,10 @@ class MiniTag{
      array = _array;
      x = _x; y = _y; tween_target_y = _y;
      w = _w;
+   }
+   
+   MiniTag copy(){
+      return new MiniTag(array, x, y, w); 
    }
    
    void draw(){
