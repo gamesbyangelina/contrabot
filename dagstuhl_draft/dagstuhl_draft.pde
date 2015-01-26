@@ -99,9 +99,22 @@ void setup(){
 }
 
 void sendCode(){
-   /*
-    *  DO STUFF HERE
-    */
+   
+    /* First, we create an encoding of the CodeButton matrix
+     * into the Code class which allows for our 'intelligence'
+     * to try and learn from the behaviour.
+     **/
+    Integer[] parsedCode = new Integer[tableSize*tableSize];
+    int parsedCodeIndex = 0;
+    
+    for(int i=0; i<tableSize; i++){
+      for(int j=0;j<tableSize;j++){
+        parsedCode[parsedCodeIndex++] = code[i][j].toInteger();    
+      }
+    }
+  
+    Code encoded = new Code(parsedCode);
+
    //b_waitingForPlayerToSendCode = false; 
    
    crate_for_player.attachTag(code);
@@ -383,4 +396,76 @@ class CodeButton{
           return false;
         }
     }
+    
+    Integer toInteger() {
+      return new Integer(state);
+    }
 }
+
+class Code {
+  public Integer[] code;
+  public int len;
+
+  public Code(Integer[] code) {
+    int clen = code.length;
+    this.code = new Integer[clen];
+    for (int i=0; i<clen; i++) {
+      this.code[i] = code[i];
+    }
+    this.len = code.length;
+  }
+
+  public boolean matchCode(Code target) {
+    int ncol = target.len;
+    if (ncol != this.len) {
+      throw new java.lang.IllegalArgumentException();
+    }
+    for (int c=0; c<ncol; c++) {
+      if (target.code[c] != null &&
+        this.code[c] != target.code[c]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Code learnCode(ArrayList<Code> inputCodes) {
+    //  Integer[] learnCode(List[Integer] inputCodes[][]) {
+    int totalCodes = inputCodes.size();
+    int codeLength = inputCodes.get(0).len;
+
+    Integer code = null;
+    //  Integer lastLearned = null;
+
+    Integer[] learnedCode = new Integer[codeLength];
+
+    /**
+     * The agent will iterate across every 'cell' in the cypher.
+     * It first establishes what the actual code is based upon the 
+     * first cell in the first cypher of the list.  In the event
+     * that this does not persist across all instances in the list it
+     * is otherwise ignored and set as null.
+     */
+
+    for (int c=0; c<codeLength; c++) {
+      for (int currentCode=0; currentCode<totalCodes; currentCode++) {
+        if (inputCodes.get(currentCode).len != codeLength) {
+          throw new java.lang.IllegalArgumentException(); // throw error
+        }
+
+        if (currentCode==0) { 
+          code = inputCodes.get(currentCode).code[c];
+          learnedCode[c] = code;
+        } else {
+          if (code != inputCodes.get(currentCode).code[c]) {
+            learnedCode[c] = null;
+          }
+        }
+      }
+    }
+    Code lcode = new Code(learnedCode);
+    return lcode;
+  }
+}
+
