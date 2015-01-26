@@ -13,6 +13,7 @@ boolean crates_should_move = true;
 
 //Inspector Memory
 MiniTag[] inspector_memory;
+MiniTag[] smuggler_memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -23,6 +24,7 @@ PImage img_crate;
 //Game state stuff
 boolean b_waitingForPlayerToSendCode = true;
 int inspectorMemorySize = 4;
+int smugglerMemorySize = 4;
 int minitagwidth = 4;
 
 //Scenery silliness
@@ -75,6 +77,7 @@ void setup(){
 
     //Set up the minitag index with empties
     inspector_memory = new MiniTag[4];
+    smuggler_memory = new MiniTag[4];
     int[][] empty = new int[][]{
         {2,2,2,2},
         {2,2,2,2},
@@ -83,6 +86,9 @@ void setup(){
     };
     for(int i=0; i<inspectorMemorySize; i++){
       inspector_memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+    }
+    for(int i=0; i<inspectorMemorySize; i++){
+      smuggler_memory[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
     }
 
     font = createFont("font.ttf", 32);
@@ -122,8 +128,21 @@ void addCodeToInspectorMemory(SceneryCrate sc){
     inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-2].x;  
 }
 
+void addCodeToSmugglerMemory(SceneryCrate sc){
+     MiniTag m = sc.m.copy();
+    smuggler_memory[0].tween_target_y = -32;
+    for(int i=0; i<smugglerMemorySize-1; i++){
+       smuggler_memory[i+1].tween_target_y = inspector_memory[i].y;
+       smuggler_memory[i] = smuggler_memory[i+1];
+    }
+    smuggler_memory[smugglerMemorySize-1] = m;
+    smuggler_memory[smugglerMemorySize-1].tween_target_y = smuggler_memory[smugglerMemorySize-2].y;
+    smuggler_memory[smugglerMemorySize-1].x = smuggler_memory[smugglerMemorySize-2].x;  
+}
+
+
 void keyPressed(){
-   if(crates_should_move && key == ' ' && b_waitingForPlayerToSendCode){
+   if(crates_should_move && crate_for_inspector == null && key == ' ' && b_waitingForPlayerToSendCode){
       sendCode();
    } 
    if(key == 'q'){
@@ -139,6 +158,8 @@ void keyPressed(){
 
 void draw(){
    background(153);
+   stroke(0);
+   fill(0);
    
    //Draw all the things!
    for(int i=0; i<tableSize; i++){
@@ -167,6 +188,9 @@ void draw(){
     for(int i=0; i<inspectorMemorySize; i++){
        inspector_memory[i].draw(); 
     }
+    for(int i=0; i<smugglerMemorySize; i++){
+       smuggler_memory[i].draw(); 
+    }
     //Some text
     fill(0,0,0);
     text("Current Code", 50 + tableSize*(buttonWidth/2), 15);
@@ -188,13 +212,31 @@ void draw(){
        //The inspector crate is waiting
        crates_should_move = false;
        //inspectorMakeDecision()
-       addCodeToInspectorMemory(crate_for_inspector);
        
        //if(crate_is_ignored()){
-       crates_should_move = true;
-       crate_for_inspector.setWaypoint(width+32);
-       crate_for_inspector = null;
-       //}
+       if(int(random(2)) == 0){
+         crates_should_move = true;
+         addCodeToInspectorMemory(crate_for_inspector);
+         crate_for_inspector.setWaypoint(wait_smuggler);
+         crate_for_smuggler = crate_for_inspector;
+         crate_for_inspector = null;
+       }
+       else{
+         crate_for_inspector.setYWaypoint(height+32);
+         crate_for_inspector = null;
+         crates_should_move = true;
+       }
+   }
+   
+   if(crate_for_smuggler != null &&
+     crate_for_smuggler.x == crate_for_smuggler.waypoint && crates_should_move){
+     crates_should_move = false;
+     //smugglerMakeDecision()
+     addCodeToSmugglerMemory(crate_for_smuggler);
+     //Again, for now let's unpause immediately and process it
+     crates_should_move = true; 
+     crate_for_smuggler.setWaypoint(width+64);
+     crate_for_smuggler = null;   
    }
    
    //Animation [IGNORE]
@@ -237,7 +279,8 @@ void mousePressed(){
 class SceneryCrate{
    int x, y;
    int speed = 2;
-   int waypoint = 0;
+   int waypoint = -1;
+   int y_waypoint = -1;
    MiniTag m = null;
   
   SceneryCrate(int _x, int _y){
@@ -246,6 +289,10 @@ class SceneryCrate{
   
   void setWaypoint(int x){
      waypoint = x; 
+  }
+  
+   void setYWaypoint(int y){
+     y_waypoint = y; 
   }
   
   void attachTag(CodeButton[][] code){
@@ -260,12 +307,22 @@ class SceneryCrate{
   
   void update(){
     if(crates_should_move){
+      if(waypoint >= 0){
        if(x >= waypoint){
           x = waypoint;
        }
        else{
          x += speed;
        }
+      }
+      if(y_waypoint >= 0){
+       if(y >= waypoint){
+          y = waypoint;
+       }
+       else{
+         y += speed;
+       }
+      }
     }
      
      image(img_crate, x, y);
