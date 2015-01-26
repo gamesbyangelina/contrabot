@@ -41,6 +41,7 @@ int inspector_frame_dx = 0;
 PImage[] anim_inspector;
 int nextFrame = 100; int animRate = 100; int lastMillis = 0;
 int nextBlinkTime = 2000 + int(random(3000));
+int inspector_mental_reset_timer = 0;
 
 void setup(){
     randomSeed(0);
@@ -203,6 +204,12 @@ void draw(){
    stroke(0);
    fill(0);
    
+   //VIEW: Reset the speech bubble after a time period 
+   if(inspector_mental_reset_timer != 0 && millis() > inspector_mental_reset_timer){
+     inspector_mental_reset_timer = 0;
+      inspector_mental_state = -1; 
+   }
+   
    //Draw all the things!
    for(int i=0; i<tableSize; i++){
        for(int j=0; j<tableSize; j++){
@@ -224,21 +231,21 @@ void draw(){
     if(inspector_mental_state > -1){
        switch(inspector_mental_state){
           case 0:
-            image(bubble_question, 900/2-28, height-72-40);
+            image(bubble_question, 900/2+16, height-72-40);
             break;
           case 1:
-            image(bubble_tick, 900/2-28, height-72-40);
+            image(bubble_tick, 900/2+16, height-72-40);
             break;
           case 2:
-            image(bubble_exclamation, 900/2-28, height-72-40);
+            image(bubble_exclamation, 900/2+16, height-72-40);
             break;
        } 
     }
 
-    image(anim_inspector[inspector_frame], 900/2 - 32, height-64);
-    image(img_inspector, 900/2-32-32, height-72);
+    //image(anim_inspector[inspector_frame], 900/2 - 32, height-64);
+    image(img_inspector, 900/2-24, height-72);
     //Draw the smuggler
-    image(img_smuggler, 600+150-32, height-72);
+    image(img_smuggler, 600+150-24, height-72);
     //The crates
     for(SceneryCrate sc : scenery_crates){
         sc.update(); 
@@ -281,7 +288,9 @@ void draw(){
        
        if (inspector_model != null &&
            inspector_model.matchCode(crate_for_inspector.getEncoding())) {
-             
+            
+           //Show an exclamation
+           inspector_mental_state = 2;
            print("inspector matched!");
            println(inspector_model.code);
            doInspect = true;
@@ -289,13 +298,15 @@ void draw(){
            
            
        } else if (int(random(2)) == 0) {
+         
+         //Show an exclamation
+         inspector_mental_state = 0;
          println("inspector randomly checks");
          doInspect = true;
        }
        
        if (doInspect) {
-         //Show an exclamation
-         inspector_mental_state = 2;
+         
          
           println("doing inspection...adding to memory");
          addCodeToInspectorMemory(crate_for_inspector);
@@ -318,6 +329,8 @@ void draw(){
          crate_for_smuggler = crate_for_inspector;
          crate_for_inspector = null;
        }
+       
+       inspector_mental_reset_timer = millis()+3000;
    }
    
    // SMUGGLER CHECKING
