@@ -12,8 +12,10 @@ SceneryCrate crate_for_smuggler = null;      int wait_smuggler;
 boolean crates_should_move = true;
 
 //Inspector Memory
-MiniTag[] inspector_memory;
-MiniTag[] smuggler_memory;
+MiniTag[] inspector_minitag;
+MiniTag[] smuggler_minitag;
+ArrayList<Code> inspector_code_memory;
+Code[] smuggler_code_memory;
 int tableSize = 4;
 int buttonWidth = 50;
 
@@ -77,8 +79,11 @@ void setup(){
     wait_smuggler = 650+(tableSize*50)/2 - 12;
 
     //Set up the minitag index with empties
-    inspector_memory = new MiniTag[4];
-    smuggler_memory = new MiniTag[4];
+    inspector_minitag = new MiniTag[4];
+    smuggler_minitag = new MiniTag[4];
+    smuggler_code_memory = new Code[4];
+    inspector_code_memory = new ArrayList<Code>();
+    
     int[][] empty = new int[][]{
         {2,2,2,2},
         {2,2,2,2},
@@ -86,10 +91,10 @@ void setup(){
         {2,2,2,2},
     };
     for(int i=0; i<inspectorMemorySize; i++){
-      inspector_memory[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+      inspector_minitag[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
     }
     for(int i=0; i<inspectorMemorySize; i++){
-      smuggler_memory[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
+      smuggler_minitag[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
     }
 
     font = createFont("font.ttf", 32);
@@ -124,6 +129,7 @@ void sendCode(){
 
    //b_waitingForPlayerToSendCode = false; 
    
+   crate_for_player.attachEncoding(encoded);
    crate_for_player.attachTag(code);
    crate_for_player.setWaypoint(wait_inspector);
    crate_for_inspector = crate_for_player;
@@ -132,26 +138,34 @@ void sendCode(){
 
 void addCodeToInspectorMemory(SceneryCrate sc){
      MiniTag m = sc.m.copy();
-    inspector_memory[0].tween_target_y = -32;
+    inspector_minitag[0].tween_target_y = -32;
     for(int i=0; i<inspectorMemorySize-1; i++){
-       inspector_memory[i+1].tween_target_y = inspector_memory[i].y;
-       inspector_memory[i] = inspector_memory[i+1];
+       inspector_minitag[i+1].tween_target_y = inspector_minitag[i].y;
+       inspector_minitag[i] = inspector_minitag[i+1];
     }
-    inspector_memory[inspectorMemorySize-1] = m;
-    inspector_memory[inspectorMemorySize-1].tween_target_y = inspector_memory[inspectorMemorySize-2].y;
-    inspector_memory[inspectorMemorySize-1].x = inspector_memory[inspectorMemorySize-2].x;  
+    inspector_minitag[inspectorMemorySize-1] = m;
+    inspector_minitag[inspectorMemorySize-1].tween_target_y = inspector_minitag[inspectorMemorySize-2].y;
+    inspector_minitag[inspectorMemorySize-1].x = inspector_minitag[inspectorMemorySize-2].x;  
+    inspector_code_memory.add(sc.getEncoding());
 }
 
 void addCodeToSmugglerMemory(SceneryCrate sc){
      MiniTag m = sc.m.copy();
-    smuggler_memory[0].tween_target_y = -32;
+    smuggler_minitag[0].tween_target_y = -32;
     for(int i=0; i<smugglerMemorySize-1; i++){
-       smuggler_memory[i+1].tween_target_y = inspector_memory[i].y;
-       smuggler_memory[i] = smuggler_memory[i+1];
+       smuggler_minitag[i+1].tween_target_y = inspector_minitag[i].y;
+       smuggler_minitag[i] = smuggler_minitag[i+1];
     }
-    smuggler_memory[smugglerMemorySize-1] = m;
-    smuggler_memory[smugglerMemorySize-1].tween_target_y = smuggler_memory[smugglerMemorySize-2].y;
-    smuggler_memory[smugglerMemorySize-1].x = smuggler_memory[smugglerMemorySize-2].x;  
+    smuggler_minitag[smugglerMemorySize-1] = m;
+    smuggler_minitag[smugglerMemorySize-1].tween_target_y = smuggler_minitag[smugglerMemorySize-2].y;
+    smuggler_minitag[smugglerMemorySize-1].x = smuggler_minitag[smugglerMemorySize-2].x;  
+    
+    Code encoding = sc.getEncoding();
+    for(int i=0; i<smugglerMemorySize-1; i++){
+       smuggler_code_memory[i] = smuggler_code_memory[i+1];
+    }
+    smuggler_code_memory[smugglerMemorySize-1] = encoding;
+    
 }
 
 
@@ -196,10 +210,10 @@ void draw(){
     }
     //Minitags in the inspector memory
     for(int i=0; i<inspectorMemorySize; i++){
-       inspector_memory[i].draw(); 
+       inspector_minitag[i].draw(); 
     }
     for(int i=0; i<smugglerMemorySize; i++){
-       smuggler_memory[i].draw(); 
+       smuggler_minitag[i].draw(); 
     }
     //Some text
     fill(0,0,0);
@@ -298,6 +312,7 @@ class SceneryCrate{
    int waypoint = -1;
    int y_waypoint = -1;
    MiniTag m = null;
+   Code encoding = null;
   
   SceneryCrate(int _x, int _y){
      x = _x; y = _y;
@@ -320,6 +335,15 @@ class SceneryCrate{
      } 
      m = new MiniTag(code_as_ints, x, y, minitagwidth);
   }
+  
+  void attachEncoding(Code encoding){
+    this.encoding = encoding;
+  }
+  
+  public Code getEncoding(){
+    return encoding;
+  } 
+  
   
   void update(){
     if(crates_should_move){
