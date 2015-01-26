@@ -271,6 +271,9 @@ void draw(){
    Code inspector_model = dummyCode.learnCode(inspector_code_memory); // generalize
    Code smuggler_model = dummyCode.learnCode(smuggler_code_memory); // generalize
    
+   updateCode(inspector_model, suspected_code);
+   updateCode(smuggler_model, smuggler_code);
+   
    // INSPECTOR CHECKING
    if(crate_for_inspector != null && 
        crate_for_inspector.x == crate_for_inspector.waypoint && crates_should_move){
@@ -378,6 +381,22 @@ void draw(){
    
    //END ANIMATION
    
+}
+
+void updateCode(Code code, CodeButton table[][]) {
+
+  for(int i=0; i<tableSize; i++){
+       for(int j=0; j<tableSize; j++){
+         CodeButton cb = table[i][j];
+         Integer val = (code == null)?null:code.code[i*tableSize+j];
+         if (val == null) {
+           cb.state = 2; 
+         } else {
+           cb.state = val;
+         }
+         cb.updateColor();
+      } 
+    } 
 }
 
 void mousePressed(){
@@ -552,8 +571,7 @@ class CodeButton{
     }
     
     void updateColor(){
-      if(!editable)
-        return;
+ 
        switch(state){
           case 0: c = c_off; break;
           case 1: c = c_on; break;
@@ -594,8 +612,8 @@ class Code {
       throw new java.lang.IllegalArgumentException();
     }
     for (int c=0; c<ncol; c++) {
-      if (target.code[c] != null &&
-        this.code[c] != target.code[c]) {
+      if (this.code[c] != null &&
+        !this.code[c].equals(target.code[c])) {
         return false;
       }
     }
@@ -634,7 +652,7 @@ class Code {
           code = inputCodes.get(currentCode).code[c];
           learnedCode[c] = code;
         } else {
-          if (code.equals(inputCodes.get(currentCode).code[c])) {
+          if (!code.equals(inputCodes.get(currentCode).code[c])) {
             learnedCode[c] = null;
           }
         }
