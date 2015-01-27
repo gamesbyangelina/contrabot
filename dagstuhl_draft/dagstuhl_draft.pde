@@ -262,7 +262,8 @@ void draw(){
     text("Current Code", 50 + tableSize*(buttonWidth/2), 15);
     text("Suspected Code", 350 + tableSize*(buttonWidth/2), 15);
     text("Smuggler's Code", 650 + tableSize*(buttonWidth/2), 15);
-    text("Press SPACE to transmit", 450, 265);
+    text(score+" Packages", 750, 265);
+    text("Press SPACE to transmit", 300, 265);
     rect(0, height-2, width, 2);
     
    //Update all the game logics!
