@@ -17,8 +17,8 @@ MiniTag[] inspector_minitag;
 MiniTag[] smuggler_minitag;
 ArrayList<Code> inspector_code_memory;
 ArrayList<Code> smuggler_code_memory;
-int tableSize = 4;
-int buttonWidth = 50;
+int tableSize = 12;
+int buttonWidth = 200/tableSize;
 
 //Assets - images, fonts, etc.
 PFont font;
@@ -32,7 +32,12 @@ boolean b_waitingForPlayerToSendCode = true;
 int inspector_mental_state = -1;
 int inspectorMemorySize = 4;
 int smugglerMemorySize = 4;
-int minitagwidth = 4;
+int minitagwidth = 4; // CHANGE ME TO ACCOMMODATE TABLE SIZE
+
+// tableSize & minitagwidth
+// 4 & 12
+// 8 & 6
+// 12 & 3.5
 
 //Scenery silliness
 ArrayList<SceneryCrate> scenery_crates = new ArrayList<SceneryCrate>();
@@ -42,6 +47,8 @@ PImage[] anim_inspector;
 int nextFrame = 100; int animRate = 100; int lastMillis = 0;
 int nextBlinkTime = 2000 + int(random(3000));
 int inspector_mental_reset_timer = 0;
+
+int buttonScale = 200 / tableSize;
 
 void setup(){
     randomSeed(0);
@@ -65,63 +72,60 @@ void setup(){
     code = new CodeButton[tableSize][tableSize];
     for(int i=0; i<tableSize; i++){
        for(int j=0; j<tableSize; j++){
-          code[i][j] = new CodeButton(50+i*50, 50+j*50, 50, 50, true);
+          code[i][j] = new CodeButton(50+i*buttonScale, 
+          50+j*buttonScale, 
+          buttonScale, buttonScale, true);
        } 
     }
     
-    wait_player = 50+(tableSize*50)/2 - 12;
+    wait_player = 50+(tableSize*buttonScale)/2 - 12;
     
     //Create a 3x3 table of (uneditable) buttons to show what the current suspected code is
     suspected_code = new CodeButton[tableSize][tableSize];
     for(int i=0; i<tableSize; i++){
        for(int j=0; j<tableSize; j++){
-          suspected_code[i][j] = new CodeButton(350+(i*50), 50+j*50, 50, 50, false);
+          suspected_code[i][j] = new CodeButton(350+(i*buttonScale), 
+          50+j*buttonScale, 
+          buttonScale, buttonScale, false);
        } 
     }
     
-    wait_inspector = 350+(tableSize*50)/2 - 12;
+    wait_inspector = 350+(tableSize*buttonScale)/2 - 12;
     
     //Create a 3x3 table of (uneditable) buttons to show what the current suspected code is
     smuggler_code = new CodeButton[tableSize][tableSize];
     for(int i=0; i<tableSize; i++){
        for(int j=0; j<tableSize; j++){
-          smuggler_code[i][j] = new CodeButton(650+(i*50), 50+j*50, 50, 50, false);
+          smuggler_code[i][j] = new CodeButton(650+(i*buttonScale), 
+          50+j*buttonScale, 
+          buttonScale, buttonScale, false);
        } 
     }
     
-    wait_smuggler = 650+(tableSize*50)/2 - 12;
+    wait_smuggler = 650+(tableSize*buttonScale)/2 - 12;
 
     //Set up the minitag index with empties
-    inspector_minitag = new MiniTag[4];
-    smuggler_minitag = new MiniTag[4];
+    inspector_minitag = new MiniTag[tableSize];
+    smuggler_minitag = new MiniTag[tableSize];
     smuggler_code_memory = new ArrayList<Code>();
     inspector_code_memory = new ArrayList<Code>();
     
-    int[][] empty = new int[][]{
-        {2,2,2,2},
-        {2,2,2,2},
-        {2,2,2,2},
-        {2,2,2,2},
-    };
-    for(int i=0; i<inspectorMemorySize; i++){
-      inspector_minitag[i] = new MiniTag(empty, 350+tableSize*50+10, 50+i*25, minitagwidth);
+    int[][] empty = new int[tableSize][tableSize];
+    for (int row=0; row<tableSize; row++) {
+     for (int col=0; col<tableSize; col++) {
+       empty[row][col] = 2;
+     } 
     }
     for(int i=0; i<inspectorMemorySize; i++){
-      smuggler_minitag[i] = new MiniTag(empty, 650+tableSize*50+10, 50+i*25, minitagwidth);
+      inspector_minitag[i] = new MiniTag(empty, 350+tableSize*buttonScale+(buttonScale/5), 50+i*(buttonScale*3/2), minitagwidth/2);
+    }
+    for(int i=0; i<inspectorMemorySize; i++){
+      smuggler_minitag[i] = new MiniTag(empty, 650+tableSize*buttonScale+(buttonScale/5), 50+i*(buttonScale*3/2), minitagwidth/2);
     }
 
     font = createFont("font.ttf", 32);
     textFont(font);
     textAlign(CENTER, TOP);
-    
-    int[][] minicode = new int[][]{
-      {1,0,1,0},
-      {0,1,0,1},
-      {1,0,1,0},
-      {0,1,0,1},
-    };
-    
-    
 }
 
 void sendCode(){
@@ -259,11 +263,11 @@ void draw(){
     }
     //Some text
     fill(0,0,0);
-    text("Current Code", 50 + tableSize*(buttonWidth/2), 15);
-    text("Suspected Code", 350 + tableSize*(buttonWidth/2), 15);
-    text("Smuggler's Code", 650 + tableSize*(buttonWidth/2), 15);
+    text("Current Code", 50 + tableSize*(buttonScale/2), 15);
+    text("Suspected Code", 350 + tableSize*(buttonScale/2), 15);
+    text("Smuggler's Code", 650 + tableSize*(buttonScale/2), 15);
     text(score+" Packages", 750, 265);
-    text("Press SPACE to transmit", 300, 265);
+    text("Press SPACE to transmit", 280, 265);
     rect(0, height-2, width, 2);
     
    //Update all the game logics!
@@ -298,9 +302,6 @@ void draw(){
            print("inspector matched!");
            println(inspector_model.code);
            doInspect = true;
-           
-           
-           
        } else if (int(random(2)) == 0) {
          
          //Show an exclamation
@@ -310,9 +311,7 @@ void draw(){
        }
        
        if (doInspect) {
-         
-         
-          println("doing inspection...adding to memory");
+         println("doing inspection...adding to memory");
          addCodeToInspectorMemory(crate_for_inspector);
          
          crate_for_inspector.setYWaypoint(height+32);
@@ -453,7 +452,7 @@ class SceneryCrate{
             code_as_ints[i][j] = code[i][j].state;
         }
      } 
-     m = new MiniTag(code_as_ints, x, y, minitagwidth);
+     m = new MiniTag(code_as_ints, x, y, minitagwidth/2);
   }
   
   void attachEncoding(Code encoding){
