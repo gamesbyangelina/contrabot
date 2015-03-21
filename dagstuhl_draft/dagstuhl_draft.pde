@@ -30,7 +30,7 @@ PImage bubble_question, bubble_tick, bubble_exclamation;
 //Game state stuff
 boolean b_waitingForPlayerToSendCode = true;
 int inspector_mental_state = -1;
-int inspectorMemorySize = 4;
+int inspectorMemorySize = 8;
 int smugglerMemorySize = 4;
 int minitagwidth = 4; // CHANGE ME TO ACCOMMODATE TABLE SIZE
 
@@ -165,6 +165,10 @@ void addCodeToInspectorMemory(SceneryCrate sc){
     inspector_minitag[inspectorMemorySize-1].tween_target_y = inspector_minitag[inspectorMemorySize-2].y;
     inspector_minitag[inspectorMemorySize-1].x = inspector_minitag[inspectorMemorySize-2].x;  
     inspector_code_memory.add(sc.getEncoding());
+    
+    if (inspector_code_memory.size() > inspectorMemorySize) {
+      inspector_code_memory.remove(0);
+    }
 }
 
 void addCodeToSmugglerMemory(SceneryCrate sc){
@@ -184,7 +188,7 @@ void addCodeToSmugglerMemory(SceneryCrate sc){
 //    }
 
     smuggler_code_memory.add(encoding);
-    if (smuggler_code_memory.size() > 4) {
+    if (smuggler_code_memory.size() > smugglerMemorySize) {
       smuggler_code_memory.remove(0);
     }
 //    smuggler_code_memory[smugglerMemorySize-1] = encoding;
