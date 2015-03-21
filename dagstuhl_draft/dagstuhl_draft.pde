@@ -310,6 +310,8 @@ void draw(){
        if (inspector_model != null &&
            inspector_model.matchCode(crate_for_inspector.getEncoding())) {
             
+           inspectChance = inspectBase; // return to base rate
+           
            //Show an exclamation
            inspector_mental_state = 2;
            print("inspector matched!");
