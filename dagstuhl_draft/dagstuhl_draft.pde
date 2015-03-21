@@ -20,6 +20,11 @@ ArrayList<Code> smuggler_code_memory;
 int tableSize = 12;
 int buttonWidth = 200/tableSize;
 
+// Inspect chance modifiers
+float inspectBase = 0.2f; // base rate for inspection
+float inspectIncrement = 0.1f; // increment to rate when nothing seen
+float inspectChance = 0.2f; // chance inspector checks
+
 //Assets - images, fonts, etc.
 PFont font;
 PImage img_crate;
@@ -298,6 +303,10 @@ void draw(){
        
        boolean doInspect = false;
        
+       float inspectRoll = random(1.0f);
+       println("inspect value: " + inspectRoll);
+       println("inspect chance: " + inspectChance);
+       
        if (inspector_model != null &&
            inspector_model.matchCode(crate_for_inspector.getEncoding())) {
             
@@ -306,12 +315,16 @@ void draw(){
            print("inspector matched!");
            println(inspector_model.code);
            doInspect = true;
-       } else if (int(random(2)) == 0) {
+       //} else if (int(random(2)) == 0) {
+       } else if (inspectRoll < inspectChance) {
+         inspectChance = inspectBase; // return to base rate
          
          //Show an exclamation
          inspector_mental_state = 0;
          println("inspector randomly checks");
          doInspect = true;
+       } else {
+         inspectChance += inspectIncrement;
        }
        
        if (doInspect) {
